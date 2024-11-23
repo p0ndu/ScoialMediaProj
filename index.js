@@ -8,8 +8,9 @@ import dotenv from 'dotenv';
 // importing internal dependencies
 import { followUser, unfollowUser, newUser, deleteUser, changePassword, changeEmail, changePhoneNumber, changeUsername, blockUser, unblockUser  } from './userFiles/userController.js';
 import User from './userFiles/User.js';
-import { newPost, deletePost } from './postFiles/postController.js';
-import Post from './userFiles/Post.js';
+import { newPost, deletePost, getPoster, addComment, likePost} from './postFiles/postController.js';
+import Post from './postFiles/Post.js';
+import Comment from './postFiles/Comment.js';
 
 // setup for express web service
 
@@ -67,19 +68,25 @@ try {
 //     console.log("error inserting test data into database");
 //     console.log(e);
 // }
-
 const uID1 = new ObjectId('6740e51528a9b0395e4b50ca');
-const post1 = new Post(uID1, "this is a test post", "Pretend this is an image",  );
-console.log(await newPost(postCollection, post1));
+const uID2 = new ObjectId('6740e51528a9b0395e4b50c9');
+
+console.log("creating new post \n");
+
+const post1 = new Post(uID1, "Test text", "Test image");
+const result = await newPost(postCollection, post1);
+const postID = result.insertedId;
+
+console.log("attemtping to like post as second user \n");
+
+const likeResult = await likePost(postCollection, postID, uID2);
+console.log(likeResult);
 
 
 
-
-
-
-
-
-
+// console.log(result);
+// const comment = new Comment(uID1, "Test comment"); // creates a new comment
+// console.log("postID : " + postID + "\n");
 
 
 
