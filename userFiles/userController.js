@@ -1,5 +1,3 @@
-// import { ObjectId } from "mongodb";
-
 // user management functions
 
 async function newUser(collection, user) { // adds new user to database assumes program has checked that user does not already exist 
