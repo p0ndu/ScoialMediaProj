@@ -59,9 +59,69 @@ async function addComment(collection, postID, comment) { // adds a comment to a 
     }
 }
 
-async function likePost(collection, postID, userID) { // likes a post by matching id, userID is the user object id of the user who liked the post
+async function likePost(postCollection, userCollection, postID, userID) { // if user has not already liked the post, adds user to post's likes and post to user's liked posts
+    if (! await checkIfLiked(postCollection, postID, userID)) { // checks if user has not liked the post yet
+        try {
+            const postResult = await postCollection.updateOne({ _id: postID }, { $push: { likes: userID } }); // tries to add user to post's likes
+            const userResult = await userCollection.updateOne({ _id: userID }, { $push: { likedPosts: postID } }); // tries to add post to user's liked posts
+
+            return await [postResult, userResult];
+        }
+        catch (err) {
+            console.log(err);
+            return 0;
+        }
+    }
+    else {
+        return "User has already liked this post";
+    }
+}
+
+async function unlikePost(postCollection, userCollection, postID, userID) { // if user has liked the post, removes user from post's likes and post from user's liked posts
+    if (await checkIfLiked(postCollection, postID, userID)) {
+        try {
+            const postResult = await postCollection.updateOne({ _id: postID}, { $pull: { likes: userID } }); // tries to remove user from post's likes
+            const userResult = await userCollection.updateOne({ _id: userID}, { $pull: {likedPosts: postID}}); // tries to remove post from user's liked posts
+
+            return await [postResult, userResult];
+        }
+        catch (err) {
+            console.log(err);
+            return 0;
+        }
+    }
+    else{
+        return "User has not liked this post";
+    }
+}
+
+async function checkIfLiked(collection, postID, userID) { // checks if a user has liked a post by matching ids
     try {
-        const result = await collection.updateOne({ _id: postID }, { $push: { likes: userID } }); // tries to add user to post's likes
+        const result = await collection.findOne({ _id: postID }); // tries to find the post in the database
+        return await result.likes.some(like => like.equals(userID));
+    }
+    catch (err) {
+        console.log(err);
+        return 0;
+    }
+
+}
+
+async function getNumLikes(collection, postID) { // gets the number of likes on a post by matching id
+    try {
+        const result = await collection.findOne({ _id: postID }); // tries to find the post in the database
+        return await result.likes.length;
+    }
+    catch (err) {
+        console.log(err);
+        return 0;
+    }
+}
+
+
+async function searchPost(collection, searchTerm) { // searches for a post by text and returns array of all matching ones
+    try {
+        const result = await collection.find({ $text: { $search: searchTerm } }).toArray(); // tries to find the post in the database
         return await result;
     }
     catch (err) {
@@ -71,4 +131,4 @@ async function likePost(collection, postID, userID) { // likes a post by matchin
 }
 
 
-export { newPost, deletePost, getPoster, addComment, likePost };
+export { newPost, deletePost, getPoster, addComment, likePost, unlikePost, getNumLikes, searchPost, }; 
