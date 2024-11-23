@@ -61,9 +61,34 @@ try {
 
 
 
-// const uID1 = new ObjectId('6740e51528a9b0395e4b50ca');
-// const uID2 = new ObjectId('6740e51528a9b0395e4b50c9');
-// const postID = new ObjectId('6741dc26940cb78c2155ea07');
+const follower = new ObjectId('6740e51528a9b0395e4b50ca');
+const followed = new ObjectId('6740e51528a9b0395e4b50c9');
+const postID = new ObjectId('6741dc26940cb78c2155ea07');
+const commentID = new ObjectId('6740e51528a9b0395e4b50ca');
+const poster = new ObjectId('6740e51528a9b0395e4b50ca');
+
+
+console.log("trying to delete post");
+console.log(await postController.deletePost(postCollection, postID, poster));
+
+
+
+
+
+
+
+
+
+console.log();
+
+
+
+
+
+
+
+
+
 
 
 

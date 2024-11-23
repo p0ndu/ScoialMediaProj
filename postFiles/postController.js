@@ -1,4 +1,5 @@
 // post management functions
+// -- creation and deletion functions -- 
 async function newPost(collection, post) // creates a new post in the database
 {
     // TODO, check that either text or image is present, or ensure to do it outside, prob here though
@@ -12,19 +13,33 @@ async function newPost(collection, post) // creates a new post in the database
     }
 };
 
-
-
-async function deletePost(collection, postID) // deletes a post from the database by matching id
+async function deletePost(collection, postID, userID) // deletes a post from the database by matching id
 {
+    if (await isUsersPost(collection, postID, userID)) { // checks if user is the poster of the post
+        try {
+            const result = await collection.deleteOne({ _id: postID }); // tries to delete post from database
+            return await result;
+        }
+        catch (err) {
+            console.log(err);
+            return 0;
+        }
+    }
+    else {
+        return "not users post";
+    }
+};
+
+async function isUsersPost(collection,postID, userID) { // checks if user is the poster of a post by matching ids
     try {
-        const result = await collection.deleteOne({ _id: postID }); // tries to delete post from database
-        return await result;
+        const result = await collection.findOne({ _id: postID }); // tries to find the post in the database
+        return await result.poster.equals(userID);
     }
     catch (err) {
         console.log(err);
         return 0;
     }
-};
+}
 
 async function getPoster(collection, postID) { // gets the poster of a post by matching id
     try {
@@ -36,6 +51,8 @@ async function getPoster(collection, postID) { // gets the poster of a post by m
         return 0;
     }
 }
+
+// -- comment related functions --
 
 async function getNumOfComments(collection, postID) { // gets the number of comments on a post by matching id, not currently in use but could be useful later
     try {
@@ -57,7 +74,36 @@ async function addComment(collection, postID, comment) { // adds a comment to a 
         console.log(err);
         return 0;
     }
+
 }
+
+async function deleteComment(collection, postID, userID) { // deletes a comment from a post by matching ids
+    if (await isUsersComment(collection, postID, userID)) { // checks if the user made the comment
+        {
+            try {
+                const result = await collection.updateOne({ _id: postID }, { $pull: { comments: { commenterID: userID } } }); // tries to remove comment from post in database
+                return await result;
+            }
+            catch (err) {
+                console.log(err);
+                return 0;
+            }
+        }
+    }
+}
+
+async function isUsersComment(collection, postID, userID) { // checks if user has commented on post, not necessarily which comment it is. maybe return an index? TODO
+    try {
+        const result = await collection.findOne({ _id: postID }); // tries to find the comment in the database
+        return await result.comments.some(comment => comment.commenterID.equals(userID)); // returns if userid is in comments
+    }
+    catch (err) {
+        console.log(err);
+        return 0;
+    }
+}
+
+// -- like related functions --
 
 async function likePost(postCollection, userCollection, postID, userID) { // if user has not already liked the post, adds user to post's likes and post to user's liked posts
     if (! await checkIfLiked(postCollection, postID, userID)) { // checks if user has not liked the post yet
@@ -78,10 +124,10 @@ async function likePost(postCollection, userCollection, postID, userID) { // if 
 }
 
 async function unlikePost(postCollection, userCollection, postID, userID) { // if user has liked the post, removes user from post's likes and post from user's liked posts
-    if (await checkIfLiked(postCollection, postID, userID)) {
+    if (await checkIfLiked(postCollection, postID, userID)) { // checks if user has liked the post
         try {
-            const postResult = await postCollection.updateOne({ _id: postID}, { $pull: { likes: userID } }); // tries to remove user from post's likes
-            const userResult = await userCollection.updateOne({ _id: userID}, { $pull: {likedPosts: postID}}); // tries to remove post from user's liked posts
+            const postResult = await postCollection.updateOne({ _id: postID }, { $pull: { likes: userID } }); // tries to remove user from post's likes
+            const userResult = await userCollection.updateOne({ _id: userID }, { $pull: { likedPosts: postID } }); // tries to remove post from user's liked posts
 
             return await [postResult, userResult];
         }
@@ -90,7 +136,7 @@ async function unlikePost(postCollection, userCollection, postID, userID) { // i
             return 0;
         }
     }
-    else{
+    else {
         return "User has not liked this post";
     }
 }
@@ -118,6 +164,7 @@ async function getNumLikes(collection, postID) { // gets the number of likes on 
     }
 }
 
+// -- searching for posts -- 
 
 async function searchPost(collection, searchTerm) { // searches for a post by text and returns array of all matching ones
     try {
@@ -131,4 +178,4 @@ async function searchPost(collection, searchTerm) { // searches for a post by te
 }
 
 
-export { newPost, deletePost, getPoster, addComment, likePost, unlikePost, getNumLikes, searchPost, }; 
+export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost}; 
