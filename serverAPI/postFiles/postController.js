@@ -5,11 +5,13 @@ async function newPost(collection, post) // creates a new post in the database
     // TODO, check that either text or image is present, or ensure to do it outside, prob here though
     try {
         const result = await collection.insertOne(post); // tries to insert post into database
-        return await result;
+        console.log(result);
+        
+        return 200;
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 };
 
@@ -18,15 +20,16 @@ async function deletePost(collection, postID, userID) // deletes a post from the
     if (await isUsersPost(collection, postID, userID)) { // checks if user is the poster of the post
         try {
             const result = await collection.deleteOne({ _id: postID }); // tries to delete post from database
-            return await result;
+            console.log(result);
+            return 200;
         }
         catch (err) {
             console.log(err);
-            return 0;
+            return 100;
         }
     }
     else {
-        return "not users post";
+        return 300;
     }
 };
 
@@ -177,5 +180,19 @@ async function searchPost(collection, searchTerm) { // searches for a post by te
     }
 }
 
+async function getPosts(collection, following) { // gets all posts of people followed by user
+    const posts = [];
+    try{
+        for (follower in following){
+            const result = await collection.find({ poster: follower }).toArray();
+            posts.push(result);
+        }
+        return posts;
+    }
+    catch(err){
+        console.log(err);
+        return 100;
+    }
+}
 
 export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost}; 

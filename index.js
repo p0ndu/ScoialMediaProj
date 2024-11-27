@@ -6,27 +6,16 @@ import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
 import dotenv from 'dotenv';
 
 // importing internal dependencies
-import * as userController from './userFiles/userController.js';
-import User from './userFiles/User.js';
-import * as postController from './postFiles/postController.js';
-import Post from './postFiles/Post.js';
-import Comment from './postFiles/Comment.js';
+import * as userController from './serverAPI/userFiles/userController.js';
+import User from './ServerAPI/userFiles/User.js';
+import * as postController from './serverAPI/postFiles/postController.js';
+import Post from './serverAPI/postFiles/Post.js';
+import Comment from './serverAPI/postFiles/Comment.js';
+import { startService } from './webService/webService.js';
 
-// setup for express web service
-
-const expressServer = express(); // create express server object
-expressServer.use(bodyParser.json()); // use body parser to parse json
-expressServer.use(express.static('public')); // serve static files from public folder
-expressServer.use(expressSession({
-    secret: "secString",
-    cookie: { maxAge: 60000 },
-    resave: false,
-    saveUninitialized: true
-}))
-expressServer.listen(8080); // listen on port 8080
-console.log("Express setup (listening on port 8080)");
 
 // setup for mongoDB connection
+
 //setting up URI for mongoDB connection from .env file
 dotenv.config();
 const username = process.env.dbUsername;
@@ -58,6 +47,9 @@ try {
     client.close();
 }
 
+// setup for express web service
+
+startService(userCollection, postCollection);
 
 
 

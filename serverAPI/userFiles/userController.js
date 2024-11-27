@@ -8,7 +8,7 @@ async function newUser(collection, user) { // adds new user to database assumes 
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 }
 
@@ -20,18 +20,45 @@ async function deleteUser(collection, userId) { // remoes user from database by 
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 }
 
 // -- session management functions (maybe move these somewhere else) -- 
 
-function logout() {// WIP, logs user out on session storage
-
+function logout(request) {// WIP, logs user out on session storage
+    try{
+        request.session.email = null;
+        return 200;
+    }
+    catch(err){
+        return 100;
+    }
 }
 
-function login() {// WIP, logs user in on session storage
+async function login(collection, request, email, password) {// WIP, logs user in on local storage
+    try {
+        const userData = await collection.findOne({ email: email }); // tries to find user in database
 
+        if ((userData.email === email) && (userData.password === password) ){
+            request.session.email = userData.email;
+            return 200;
+        }
+    }
+    catch (err) {
+        console.log(err);
+        return 100;
+
+    }
+}
+
+function isLoggedIn(request) { // WIP, checks if user is logged in on local storage
+    if (request.session.email != null) {
+        return 200;
+    }
+    else {
+        return 100;
+    }
 }
 
 // -- changing credentials -- 
@@ -43,7 +70,7 @@ async function changePassword(collection, userId, newPassword) { // changes pass
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 }
 
@@ -54,7 +81,7 @@ async function changeEmail(collection, userId, newEmail) { // changes email of u
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 }
 
@@ -65,7 +92,7 @@ async function changePhoneNumber(collection, userId, newPhoneNumber) { // change
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 }
 
@@ -76,7 +103,7 @@ async function changeUsername(collection, userId, newUsername) { // changes user
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 }
 
@@ -91,7 +118,7 @@ async function followUser(collection, userId, followedId) { // adds followed use
         }
         catch (err) {
             console.log(err);
-            return 0;
+            return 100;
         }
     }
     else {
@@ -107,11 +134,22 @@ async function unfollowUser(collection, userId, followedId) { // removes followe
         }
         catch (err) {
             console.log(err);
-            return 0;
+            return 100;
         }
     }
     else {
         return "User is not following";
+    }
+}
+
+async function getFollowing(collection, userId) { // gets all users that a user is following
+    try{
+        const user = await collection.findOne({ _id: userId}); // tries to find user in database
+        return user.following;
+    }
+    catch(err){
+        console.log(err);
+        return 100;
     }
 }
 
@@ -122,7 +160,7 @@ async function isFollowing(collection, userId, followedId) { // checks if a user
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 }
 
@@ -136,7 +174,7 @@ async function blockUser(collection, userId, blockedId) { // adds blocked user t
         }
         catch (err) {
             console.log(err);
-            return 0;
+            return 100;
         }
     }
     else {
@@ -153,7 +191,7 @@ async function unblockUser(collection, userId, blockedId) { // removes blocked u
             }
             catch (err) {
                 console.log(err);
-                return 0;
+                return 100;
             }
         }
     }
@@ -169,8 +207,8 @@ async function isUserBlocked(collection, userId, blockedId) { // checks if a use
     }
     catch (err) {
         console.log(err);
-        return 0;
+        return 100;
     }
 }
 
-export { newUser, deleteUser, logout, login, changePassword, changeEmail, changePhoneNumber, changeUsername, followUser, unfollowUser, blockUser, unblockUser }; // exports functions for use in other files
+export { newUser, deleteUser, logout, login, isLoggedIn, changePassword, changeEmail, changePhoneNumber, changeUsername, followUser, unfollowUser, getFollowing, blockUser, unblockUser }; // exports functions for use in other files
