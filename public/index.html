@@ -3,41 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ImageShare - Home</title>
+    <title>Social Media</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Header -->
     <header>
-        <h1>ImageShare</h1>
+        <div class="logo">notInstagram</div>
+        <input type="text" class="search-bar" placeholder="Search">
         <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Profile</a></li>
-                <li><a href="#">Upload</a></li>
-                <li><a href="#">Logout</a></li>
-            </ul>
+            <a href="#" class="nav-icon">🏠</a>
+            <a href="#" class="nav-icon">📷</a>
+            <a href="#" class="nav-icon">❤️</a>
+            <a href="#" class="nav-icon">👤</a>
         </nav>
     </header>
+
+    <!-- Main Content -->
     <main>
-        <section class="post">
-            <h2>User123</h2>
-            <img src="path/to/image.jpg" alt="User's post image">
-            <p>Beautiful sunset at the beach!</p>
-            <div class="comments">
-                <h3>Comments</h3>
-                <ul>
-                    <li><strong>Commenter1:</strong> Amazing photo!</li>
-                    <li><strong>Commenter2:</strong> Love the colors!</li>
-                </ul>
-                <form>
-                    <input type="text" placeholder="Add a comment...">
-                    <button type="submit">Post</button>
-                </form>
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="user-profile">
+                <img src="profile-pic-placeholder.jpg" alt="User Profile">
+                <span>Username</span>
+            </div>
+            <div class="suggestions">
+                <h3>Suggestions for you</h3>
+                <div id="suggestionsContainer">
+                    <!-- suggested profiles go here via JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Posts Feed -->
+        <section class="feed">
+            <div class="post">
+                <div class="post-header">
+                    <img src="profile-pic-placeholder.jpg" alt="User Profile">
+                    <span>User123</span>
+                </div>
+                <img src="post-image-placeholder.jpg" alt="Post Image" class="post-image">
+                <div class="post-actions">
+                    <button>❤️</button>
+                    <button>💬</button>
+                    <button>📤</button>
+                </div>
+                <div class="post-caption">
+                    <span>User123</span> Caption for the post goes here...
+                </div>
             </div>
         </section>
     </main>
-    <footer>
-        <p>&copy; 2023 ImageShare. All rights reserved.</p>
-    </footer>
 </body>
 </html>
