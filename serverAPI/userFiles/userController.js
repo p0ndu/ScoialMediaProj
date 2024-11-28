@@ -127,18 +127,20 @@ async function followUser(collection, userId, followedId) { // adds followed use
 }
 
 async function unfollowUser(collection, userId, followedId) { // removes followed user from user's followed list, assumes that user exists and is already followed
-    if (await isFollowing(collection, userId, followedId)) { // checks if user is following
+    const isFollowingResult = isFollowing(collection, userId, followedId)
+    if (isFollowingResult) { // checks if user is following
         try {
             const result = await collection.updateOne({ _id: userId }, { $pull: { following: followedId } }); // tries to remove followed user from user's followed list
-            return result
+
+            return result;
         }
         catch (err) {
             console.log(err);
-            return 100;
+            return 200;
         }
     }
     else {
-        return "User is not following";
+        return 100;
     }
 }
 
@@ -156,9 +158,19 @@ async function getFollowing(collection, userId) { // gets all users that a user 
 async function isFollowing(collection, userId, followedId) { // checks if a user is following another user
     try {
         const user = await collection.findOne({ _id: userId }, { following: followedId }); // tries to find user in database
-        return await user.following.some(followed => followed.equals(followedId)); // returns if followedId is in user
+        return user.following.some(followed => followed === followedId); // returns if followedId is in user
     }
     catch (err) {
+        console.log(err);
+        return 100;
+    }
+}
+
+async function searchUser(collection, query){
+    try{
+        const result = await collection.find({username: { $regex: new RegExp(`${query}`, 'i') } }).toArray(); // tries to match user in database to query username, regex is case insensitive and attempts to match query within username(similar to substring)
+        return await result;
+    }catch(err){
         console.log(err);
         return 100;
     }
@@ -211,4 +223,4 @@ async function isUserBlocked(collection, userId, blockedId) { // checks if a use
     }
 }
 
-export { newUser, deleteUser, logout, login, isLoggedIn, changePassword, changeEmail, changePhoneNumber, changeUsername, followUser, unfollowUser, getFollowing, blockUser, unblockUser }; // exports functions for use in other files
+export { newUser, deleteUser, logout, login, isLoggedIn, changePassword, changeEmail, changePhoneNumber, changeUsername, followUser, unfollowUser, getFollowing, searchUser,  blockUser, unblockUser }; // exports functions for use in other files

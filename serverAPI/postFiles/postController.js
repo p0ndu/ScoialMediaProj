@@ -1,4 +1,7 @@
 // post management functions
+
+import { ObjectId } from "mongodb";
+
 // -- creation and deletion functions -- 
 async function newPost(collection, post) // creates a new post in the database
 {
@@ -169,9 +172,9 @@ async function getNumLikes(collection, postID) { // gets the number of likes on 
 
 // -- searching for posts -- 
 
-async function searchPost(collection, searchTerm) { // searches for a post by text and returns array of all matching ones
+async function searchPost(collection, query) { // searches for a post by text and returns array of all matching ones
     try {
-        const result = await collection.find({ $text: { $search: searchTerm } }).toArray(); // tries to find the post in the database
+        const result = await collection.find({text: { $regex: new RegExp(`${query}`, 'i') } }).toArray(); // tries to find the post in the database
         return await result;
     }
     catch (err) {
@@ -181,18 +184,24 @@ async function searchPost(collection, searchTerm) { // searches for a post by te
 }
 
 async function getPosts(collection, following) { // gets all posts of people followed by user
+    console.log(following);
+
+    let result;
     const posts = [];
-    try{
-        for (follower in following){
-            const result = await collection.find({ poster: follower }).toArray();
-            posts.push(result);
+    try {
+        for (const element of following) {
+            let objBuffer = new ObjectId(element.toString()); // converts to object id
+            const result = await collection.find({ poster: objBuffer }).toArray(); // finds all posts by user in database
+            posts.push(...result); // pushes it
         }
+    
+        console.log("Final Posts Array:", posts);
+    
         return posts;
-    }
-    catch(err){
-        console.log(err);
+    } catch (err) {
+        console.error(err);
         return 100;
     }
 }
 
-export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost}; 
+export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost, getPosts}; 

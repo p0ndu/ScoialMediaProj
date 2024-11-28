@@ -79,12 +79,75 @@ async function startService(userCollection, postCollection) {
             }
         })
 
-        expressServer.get('/contents', async (req, res) => { // get request to get all posts of people followed by user
-            const user = req.body.user; // gets user object
+        expressServer.get('/contents', async (req, res) => { // get request to get all posts of people followed by user, must be logged in
+            try{
+            const user = await userCollection.findOne({email : req.session.email}); // gets user object
+            console.log(user);
+            
             const following = user.following; // gets user's following list
             const posts = await postController.getPosts(postCollection, following); // gets all posts of people followed by user
 
             res.send(posts); // sends posts back to client
+            }
+            catch(err){
+                console.log(err);
+            }
+
+        })
+
+        expressServer.post('/follow', async (req, res) => { // post request to follow user, req needs to be JSON object with required follow data, must be logged in
+            try{
+                let user = req.session.email;
+                user = await userCollection.findOne({email : user});
+                const userId = user._id;
+                const followId = new ObjectId(req.body.followId);
+
+                const result = await userController.followUser(userCollection, userId, followId); // follows user
+                res.send(result);
+            }
+            catch(err){
+                console.log(err);
+            }
+        })
+
+        expressServer.delete('/follow', async (req, res) => { // delete request to unfollow user, req needs to be JSON object with required follow data, must be logged in
+            try{
+                let user = req.session.email;
+                user = await userCollection.findOne({email : user});
+                const userId = user._id;
+                const followId = new ObjectId(req.body.followId);
+
+                const result = userController.unfollowUser(userCollection, userId, followId); // unfollows user
+            }
+            catch(err){
+                console.log(err);
+            }
+        })
+
+        expressServer.get('/users/search', async (req, res) => { // get request to search for user, search term is passed by query 
+            try{
+                const query = req.query.q; // gets query q from search
+
+                const result = await userController.searchUser(userCollection, query.trim());
+                
+                res.send(result);
+
+            }catch(err){
+                console.log(err);
+            }
+        })
+
+        expressServer.get('/contents/search', async (req, res) => { // get request to search for post, search term is passed by query
+            try{
+                const query = req.query.q; // gets query q from search
+
+                const result = await postController.searchPost(postCollection, query.trim());
+                
+                res.send(result);
+
+            }catch(err){
+                console.log(err);
+            }
         })
 
 
