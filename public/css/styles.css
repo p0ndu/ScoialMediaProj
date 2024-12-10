@@ -1,53 +1,100 @@
-/* General body styles */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-  }
-  
-  /* Header Styling */
-  header {
-    background: #333;
-    color: white;
-    padding: 10px 0;
-    text-align: center;
-  }
-  
-  /* Section Styling */
-  #login-section,
-  #signup-section,
-  #content-section {
-    padding: 20px;
-    text-align: center;
-    margin: 10px;
-  }
-  
-  /* Input field and button consistency */
-  input {
-    padding: 8px;
-    margin: 5px;
-    width: 250px;
-  }
-  
-  button {
-    padding: 10px 15px;
-    margin: 5px;
-    background-color: #555;
-    color: white;
-    cursor: pointer;
+}
+
+/* Navbar styling */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+}
+
+.navbar button {
+    background-color: #fff;
+    color: #007bff;
     border: none;
-  }
-  
-  button:hover {
-    background-color: #777;
-  }
-  
-  /* Style for the posts */
-  #posts-container {
-    border: 1px solid #333;
-    margin: 10px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.navbar button:hover {
+    background-color: #0056b3;
+    color: #fff;
+}
+
+.navbar input[type="text"] {
+    padding: 5px;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+/* Modal styling */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    float: right;
+}
+
+.modal form {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal form input {
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.modal form button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
     padding: 10px;
-    height: 300px;
-    overflow-y: auto;
-  }
-  
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.modal form button:hover {
+    background-color: #0056b3;
+}

@@ -93,10 +93,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Fetch posts after login
+  // post related functions
   // Fetch Posts from Followed Users and All Posts
   async function fetchPosts() {
     try {
+      const postsContainer = document.getElementById('posts-container');
+      const uniqueAllPosts = []; // stores unique posts by users not followed, without duplicates of ones by followed users
+
       // Fetch posts by followed users
       const followedResponse = await fetch('/M00946088/contents');
       const followedPosts = await followedResponse.json();
@@ -105,11 +108,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const allPostsResponse = await fetch('/M00946088/contents/all');
       const allPosts = await allPostsResponse.json();
 
-      // Filter out posts already fetched from followed users
-      // Initialize an array to store unique posts
-      const uniqueAllPosts = [];
-
-      // Iterate through allPosts
+      // filters out posts by followed users from all posts
       for (const post of allPosts) {
         // Check if the post is not in followedPosts
         const isAlreadyFollowed = followedPosts.some(followedPost => followedPost._id === post._id);
@@ -118,16 +117,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
+      const combinedPosts = [...followedPosts, ...uniqueAllPosts]; // combines posts to a single array
 
-      // Combine followed posts and other posts
-      const combinedPosts = [...followedPosts, ...uniqueAllPosts];
+      postsContainer.innerHTML = ''; // clears container
 
-      // Clear the posts container
-      const postsContainer = document.getElementById('posts-container');
-      postsContainer.innerHTML = '';
+      combinedPosts.forEach(post => renderPost(post)); // renders posts
 
-      // Render all posts
-      combinedPosts.forEach(post => renderPost(post));
     } catch (error) {
       console.error('Error fetching posts:', error);
       const postsContainer = document.getElementById('posts-container');
@@ -136,8 +131,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
 
-  // Handle Search
-  searchBtn.addEventListener('click', async () => {
+  searchBtn.addEventListener('click', async () => { // search
     const query = document.getElementById('search-query').value.trim();
     if (!query) {
       alert("Please enter a search query.");
@@ -151,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const postResponse = await fetch(`${studentID}/contents/search?q=${query}`);
       const posts = await postResponse.json();
 
-      postsContainer.innerHTML = ''; // Clear previous results
+      postsContainer.innerHTML = ''; // clear previous results
 
       if (users.length > 0) {
         users.forEach(user => {
@@ -172,8 +166,11 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   async function resolveUser(posterId) {
-    if (userCache[posterId]) {
-      return userCache[posterId]; // Return cached user data
+    if (userCache[posterId]) { // if already cached just return
+
+      return userCache[posterId];
+      console.log("already cached, Cached user:", userCache[posterId]);
+      
     }
 
     try {
@@ -184,8 +181,12 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const user = await response.json();
-      userCache[posterId] = user; // Cache the resolved user object
+      userCache[posterId] = user; // cache the resolved user object
+      console.log("Resolved user:" , user);
+      
+
       return user;
+
     } catch (error) {
       console.error("Error fetching user:", error);
       return { username: "Unknown", profilePicUrl: "" };
@@ -193,8 +194,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
 
-  // Helper function for rendering users
-  function renderUser(user) {
+
+  function renderUser(user) { // html to render user, would really want this in a separate file but times getting low
     const userDiv = document.createElement('div');
     userDiv.style.border = '1px solid #ddd';
     userDiv.style.borderRadius = '8px';
@@ -228,15 +229,18 @@ document.addEventListener("DOMContentLoaded", function () {
     postsContainer.appendChild(userDiv);
   }
 
-  // Helper function for rendering posts
-  async function renderPost(post) {
+
+  async function renderPost(post) { // same as above but for posts
     if (!post || !post.poster || !post.text) {
       console.warn("Skipping invalid post:", post);
       return;
     }
 
     const user = await resolveUser(post.poster);
-
+    console.log(post.poster + " - poster");
+    
+    console.log("Resolved user:", user);
+    
     const postDiv = document.createElement('div');
     postDiv.style.border = '1px solid #ddd';
     postDiv.style.borderRadius = '8px';
@@ -281,9 +285,9 @@ document.addEventListener("DOMContentLoaded", function () {
     postsContainer.appendChild(postDiv);
   }
 
-  // Helper function to validate email format
-  function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple regex to validate email format
+
+  function isValidEmail(email) { // email input validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // regex from stack overflow, i dont know regex and am not about to learn it
     return emailRegex.test(email);
   }
 

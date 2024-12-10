@@ -52,7 +52,7 @@ async function startService(userCollection, postCollection) {
             }
           })
 
-          expressServer.get('/M00946088/contents/all', async (req, res) => { // returns all posts
+          expressServer.get('/M00946088/contents/all', async (req, res) => { // returns all posts, not required but useful to not make the site look absolutely dead
             try {
                 const posts = await postCollection.find().toArray(); // Retrieve all posts
                 res.json(posts);
@@ -171,7 +171,7 @@ async function startService(userCollection, postCollection) {
             }
         })
 
-        expressServer.get('/M00946088/users/getUserById', async (req, res) => {
+        expressServer.get('/M00946088/users/getUserById', async (req, res) => { // returns username by matching object id
             try {
                 const { userId } = req.query;
         
@@ -181,6 +181,8 @@ async function startService(userCollection, postCollection) {
         
                 // const user = await userCollection.findOne({ _id: new ObjectId(userId) });
                 const user = await userController.searchUser(userCollection, userId);
+                console.log("fetched user within webservice : ", await user);
+                
         
                 if (!user) {
                     return res.status(404).json({ error: "User not found" });
@@ -189,7 +191,6 @@ async function startService(userCollection, postCollection) {
                 res.status(200).json({
                     username: user.username,
                     email: user.email,
-                    profilePicUrl: user.profilePicUrl, // if you store this in the database
                 });
             } catch (error) {
                 console.error('Error fetching user by ID:', error);

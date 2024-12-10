@@ -1,5 +1,6 @@
 // -- user management functions --
 // -- creation and deletion --
+import { ObjectId } from "mongodb";
 
 async function newUser(collection, user) { // adds new user to database assumes program has checked that user does not already exist 
     try {
@@ -168,12 +169,12 @@ async function isFollowing(collection, userId, followedId) { // checks if a user
 
 async function searchUser(collection, query){
     try{
-        const result = await collection.find({username: { $regex: new RegExp(`${query}`, 'i') } }).toArray(); // tries to match user in database to query username, regex is case insensitive and attempts to match query within username(similar to substring)
+        const result = await collection.find({_id: new ObjectId(query)}).toArray(); // tries to match user in database to query object id, regex is case insensitive and attempts to match query within username(similar to substring)
         return await result;
     }catch(err){
         console.log(err);
         return 100;
-    }
+    } //{ $regex: new RegExp(`${query}`, 'i') } 
 }
 
 // -- blocking -- 
