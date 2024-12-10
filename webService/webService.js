@@ -9,6 +9,7 @@ import { ObjectId } from 'mongodb';
 // express functions to handle webService
 
 async function startService(userCollection, postCollection) {
+    const studentID = "/M00946088"; // student ID
     const expressServer = express(); // create express server object
     expressServer.use(bodyParser.json()); // use body parser to parse json
     expressServer.use(express.static('public')); // serve static files from public folder
@@ -24,25 +25,45 @@ async function startService(userCollection, postCollection) {
 
     console.log("initialising requests\n");
     try{
-        expressServer.post('/users', async (req, res) => { // post request to create new user, req needs to be JSON object with required userData
+        expressServer.post(studentID + '/users', async (req, res) => { // post request to create new user, req needs to be JSON object with required userData
             const user = new User(req.body.username, req.body.password, req.body.email, req.body.name, req.body.phoneNumber, req.body.age); // create user object
             const result = await userController.newUser(userCollection, user); // pushes user to database
 
             res.send(result); // sends result back to client
         })
 
-        expressServer.get('/login', async (req,res) => { // WIP, get request to check if user is logged in
-            const result = await userController.isLoggedIn(req); // checks session to see if user is logged in
-
-            if (result === 200){
-                res.send({loginStatus: true});
+        expressServer.get(studentID + '/contents', async (req, res) => { // returns posts of people followed by user
+            try {
+              const user = await userCollection.findOne({ email: req.session.email });
+              if (!user) {
+                res.status(401).send({ error: "User not found or not logged in" });
+                return;
+              }
+          
+              const following = user.following;
+            //   console.log("Following list:", following); // debugging, posts are defined here
+              
+              const posts = await postController.getPosts(postCollection, userCollection, following);
+          
+              res.send(posts);
+            } catch (error) {
+              console.log(error);
+              res.status(500).send({ error: "Could not fetch posts" });
             }
-            else{
-                res.send({loginStatus: false});
-            }
-        })
+          })
 
-        expressServer.post('/login', async (req, res) => { // get request to login user, req needs to be JSON object with email and password
+          expressServer.get('/M00946088/contents/all', async (req, res) => { // returns all posts
+            try {
+                const posts = await postCollection.find().toArray(); // Retrieve all posts
+                res.json(posts);
+            } catch (error) {
+                console.error('Error fetching all posts:', error);
+                res.status(500).json({ error: "Could not fetch posts" });
+            }
+        });
+        
+
+        expressServer.post(studentID + '/login', async (req, res) => { // get request to login user, req needs to be JSON object with email and password
             const result = await userController.login(userCollection,req, req.body.email, req.body.password); // logs user in
 
             if (result === 200){
@@ -53,7 +74,7 @@ async function startService(userCollection, postCollection) {
             }
         })
 
-        expressServer.delete('/login', async (req, res) => { // get request to logout user
+        expressServer.delete(studentID + '/login', async (req, res) => { // get request to logout user
             const result = await userController.logout(req); // logs user out
 
             if (result === 200){
@@ -64,7 +85,7 @@ async function startService(userCollection, postCollection) {
             }
         })
 
-        expressServer.post('/contents', async (req, res) => { // post request to create new post, req needs to be JSON object with required post data
+        expressServer.post(studentID + '/contents', async (req, res) => { // post request to create new post, req needs to be JSON object with required post data
             const poster = new ObjectId(req.body.poster);
             const post = new Post(poster, req.body.text); // create post object
             const result = await postController.newPost(postCollection, post); // pushes post to database
@@ -79,17 +100,108 @@ async function startService(userCollection, postCollection) {
             }
         })
 
-        expressServer.get('/contents', async (req, res) => { // get request to get all posts of people followed by user
-            const user = req.body.user; // gets user object
+        expressServer.get(studentID + '/contents', async (req, res) => { // get request to get all posts of people followed by user, must be logged in
+            try{
+            const user = await userCollection.findOne({email : req.session.email}); // gets user object
+            console.log(user);
+            
             const following = user.following; // gets user's following list
             const posts = await postController.getPosts(postCollection, following); // gets all posts of people followed by user
 
             res.send(posts); // sends posts back to client
+            }
+            catch(err){
+                console.log(err);
+            }
+
         })
 
+        expressServer.post(studentID + '/follow', async (req, res) => { // post request to follow user, req needs to be JSON object with required follow data, must be logged in
+            try{
+                let user = req.session.email;
+                user = await userCollection.findOne({email : user});
+                const userId = user._id;
+                const followId = new ObjectId(req.body.followId);
+
+                const result = await userController.followUser(userCollection, userId, followId); // follows user
+                res.send(result);
+            }
+            catch(err){
+                console.log(err);
+            }
+        })
+
+        expressServer.delete(studentID + '/follow', async (req, res) => { // delete request to unfollow user, req needs to be JSON object with required follow data, must be logged in
+            try{
+                let user = req.session.email;
+                user = await userCollection.findOne({email : user});
+                const userId = user._id;
+                const followId = new ObjectId(req.body.followId);
+
+                const result = userController.unfollowUser(userCollection, userId, followId); // unfollows user
+            }
+            catch(err){
+                console.log(err);
+            }
+        })
+
+        expressServer.get(studentID + '/users/search', async (req, res) => { // get request to search for user, search term is passed by query 
+            try{
+                const query = req.query.q; // gets query q from search
+
+                const result = await userController.searchUser(userCollection, query.trim());
+                
+                res.send(result);
+
+            }catch(err){
+                console.log(err);
+            }
+        })
+
+        expressServer.get(studentID + '/contents/search', async (req, res) => { // get request to search for post, search term is passed by query
+            try{
+                const query = req.query.q; // gets query q from search
+
+                const result = await postController.searchPost(postCollection, query.trim());
+                
+                res.send(result);
+
+            }catch(err){
+                console.log(err);
+            }
+        })
+
+        expressServer.get('/M00946088/users/getUserById', async (req, res) => {
+            try {
+                const { userId } = req.query;
+        
+                if (!userId) {
+                    return res.status(400).json({ error: "User ID is required" });
+                }
+        
+                // const user = await userCollection.findOne({ _id: new ObjectId(userId) });
+                const user = await userController.searchUser(userCollection, userId);
+        
+                if (!user) {
+                    return res.status(404).json({ error: "User not found" });
+                }
+        
+                res.status(200).json({
+                    username: user.username,
+                    email: user.email,
+                    profilePicUrl: user.profilePicUrl, // if you store this in the database
+                });
+            } catch (error) {
+                console.error('Error fetching user by ID:', error);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
+        });
+        
 
 
 
+        console.log("requests initialised\n");
+        
     }
     catch(err){
         console.log(err);

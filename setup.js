@@ -53,13 +53,6 @@ startService(userCollection, postCollection);
 
 
 
-// const follower = new ObjectId('6740e51528a9b0395e4b50ca');
-// const followed = new ObjectId('6740e51528a9b0395e4b50c9');
-// const postID = new ObjectId('6741dc26940cb78c2155ea07');
-// const commentID = new ObjectId('6740e51528a9b0395e4b50ca');
-// const poster = new ObjectId('6740e51528a9b0395e4b50ca');
-
-
 
 
 

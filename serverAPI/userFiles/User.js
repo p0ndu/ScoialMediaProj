@@ -24,5 +24,6 @@ class User { // user class to create users to add to database, no real need for 
     }
 }
 
-export default User;
 
+
+export default User;

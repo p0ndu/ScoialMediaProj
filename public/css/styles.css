@@ -1,0 +1,53 @@
+/* General body styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Header Styling */
+  header {
+    background: #333;
+    color: white;
+    padding: 10px 0;
+    text-align: center;
+  }
+  
+  /* Section Styling */
+  #login-section,
+  #signup-section,
+  #content-section {
+    padding: 20px;
+    text-align: center;
+    margin: 10px;
+  }
+  
+  /* Input field and button consistency */
+  input {
+    padding: 8px;
+    margin: 5px;
+    width: 250px;
+  }
+  
+  button {
+    padding: 10px 15px;
+    margin: 5px;
+    background-color: #555;
+    color: white;
+    cursor: pointer;
+    border: none;
+  }
+  
+  button:hover {
+    background-color: #777;
+  }
+  
+  /* Style for the posts */
+  #posts-container {
+    border: 1px solid #333;
+    margin: 10px;
+    padding: 10px;
+    height: 300px;
+    overflow-y: auto;
+  }
+  

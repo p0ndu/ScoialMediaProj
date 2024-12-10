@@ -1,4 +1,7 @@
 // post management functions
+
+import { ObjectId } from "mongodb";
+
 // -- creation and deletion functions -- 
 async function newPost(collection, post) // creates a new post in the database
 {
@@ -6,7 +9,7 @@ async function newPost(collection, post) // creates a new post in the database
     try {
         const result = await collection.insertOne(post); // tries to insert post into database
         console.log(result);
-        
+
         return 200;
     }
     catch (err) {
@@ -33,7 +36,7 @@ async function deletePost(collection, postID, userID) // deletes a post from the
     }
 };
 
-async function isUsersPost(collection,postID, userID) { // checks if user is the poster of a post by matching ids
+async function isUsersPost(collection, postID, userID) { // checks if user is the poster of a post by matching ids
     try {
         const result = await collection.findOne({ _id: postID }); // tries to find the post in the database
         return await result.poster.equals(userID);
@@ -169,9 +172,9 @@ async function getNumLikes(collection, postID) { // gets the number of likes on 
 
 // -- searching for posts -- 
 
-async function searchPost(collection, searchTerm) { // searches for a post by text and returns array of all matching ones
+async function searchPost(collection, query) { // searches for a post by text and returns array of all matching ones
     try {
-        const result = await collection.find({ $text: { $search: searchTerm } }).toArray(); // tries to find the post in the database
+        const result = await collection.find({ text: { $regex: new RegExp(`${query}`, 'i') } }).toArray(); // tries to find the post in the database
         return await result;
     }
     catch (err) {
@@ -180,19 +183,59 @@ async function searchPost(collection, searchTerm) { // searches for a post by te
     }
 }
 
-async function getPosts(collection, following) { // gets all posts of people followed by user
-    const posts = [];
-    try{
-        for (follower in following){
-            const result = await collection.find({ poster: follower }).toArray();
-            posts.push(result);
+async function getPosts(postCollection, userCollection, following) {
+    console.log("Following list:", following);
+
+    try {
+        const posts = [];
+
+        // Retrieve all posts for each followed user
+        for (const userId of following) {
+            const objBuffer = new ObjectId(userId.toString());
+            const userPosts = await postCollection.find({ poster: objBuffer }).toArray();
+            posts.push(...userPosts); // still not super sure how i feel about the spread operator but whatever
         }
-        return posts;
-    }
-    catch(err){
-        console.log(err);
-        return 100;
+
+        // Format posts to include usernames
+        const formattedPosts = await formatPosts(postCollection, userCollection, posts);
+        return formattedPosts;
+    } catch (err) {
+        console.error("Error in getPosts:", err);
+        return [];
     }
 }
 
-export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost}; 
+
+async function formatPosts(postCollection, userCollection, posts) {
+    try {
+        // Get all unique poster IDs from posts
+        const userIds = [...new Set(posts.map(post => post.poster))];
+
+        // Fetch corresponding users from the database
+        const usersCursor = await userCollection.find({ _id: { $in: userIds } });
+        const users = await usersCursor.toArray();
+
+        // Map user IDs to usernames
+        const userMap = {};
+        for (const user of users) {
+            userMap[user._id.toString()] = user.username;
+        }
+
+        // Format posts to include usernames instead of ObjectId
+        const formattedPosts = posts.map(post => ({
+            ...post, // spread poerator, really really weird syntax but it basically just copies object and lets you append to it after. trying it out here but idk if i like it
+            username: userMap[post.poster.toString()] || "Unknown User"
+        }));
+
+        return formattedPosts;
+    } catch (err) {
+        console.error("Error in formatPosts:", err);
+        return posts; // Return unformatted posts in case of error
+    }
+}
+
+
+
+
+
+export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost, getPosts }; 
