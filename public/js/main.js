@@ -175,6 +175,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       const response = await fetch(`${studentID}/users/getUserById?userId=${posterId}`);
+      const result = response.clone();
+      console.log("Response: ", result.json());
+
+      console.log("Response as text: ", result.text());
+      
+      
 
       if (!response.ok) {
         throw new Error("Failed to fetch user");

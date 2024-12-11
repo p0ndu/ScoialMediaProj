@@ -169,7 +169,7 @@ async function isFollowing(collection, userId, followedId) { // checks if a user
 
 async function searchUser(collection, query){
     try{
-        const result = await collection.find({_id: new ObjectId(query)}).toArray(); // tries to match user in database to query object id, regex is case insensitive and attempts to match query within username(similar to substring)
+        const result = await collection.findOne({_id: new ObjectId(query)}); // tries to match user in database to query object id, regex is case insensitive and attempts to match query within username(similar to substring)
         return await result;
     }catch(err){
         console.log(err);

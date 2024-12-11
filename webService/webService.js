@@ -179,9 +179,8 @@ async function startService(userCollection, postCollection) {
                     return res.status(400).json({ error: "User ID is required" });
                 }
         
-                // const user = await userCollection.findOne({ _id: new ObjectId(userId) });
                 const user = await userController.searchUser(userCollection, userId);
-                console.log("fetched user within webservice : ", await user);
+                // console.log("fetched user within webservice : ", await user);
                 
         
                 if (!user) {
