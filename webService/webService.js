@@ -99,9 +99,14 @@ async function startService(userCollection, postCollection) {
         })
 
         expressServer.post(studentID + '/contents', async (req, res) => { // post request to create new post, req needs to be JSON object with required post data
-            const poster = new ObjectId(req.body.poster);
-            const post = new Post(poster, req.body.text); // create post object
-            const result = await postController.newPost(postCollection, post); // pushes post to database
+            const postData = req.body; // extracting data from request
+            console.log(postData);
+            const {poster, post} = postData;
+
+            const posterId = new ObjectId(poster); // building post
+            const postObj = new Post(posterId, post.text);
+            
+            const result = await postController.newPost(postCollection, postObj); // pushes post to database
 
             if (result === 200) {
                 res.send({ postStatus: true });
@@ -244,8 +249,6 @@ async function startService(userCollection, postCollection) {
         expressServer.get(studentID + '/users/block', async (req, res) => { // block a user
             try {
                 const { userId, loggedInUserId } = req.query;
-                console.log("blockedId: ", userId, "loggedInUserId: ", loggedInUserId);
-                
 
                 if (!userId || !loggedInUserId) {
                     return res.status(400).json({ error: "Both blockerId and blockeeId are required" });
@@ -293,7 +296,7 @@ async function startService(userCollection, postCollection) {
                     return res.status(400).json({ error: "Both postId and userId are required" });
                 }
 
-                const likeResult = await postController.likePost(postCollection, postId, userId);
+                const likeResult = await postController.toggleLikePost(postCollection, userCollection, postId, userId);
 
                 if (likeResult === 200) {
                     res.status(200).json({ success: true });

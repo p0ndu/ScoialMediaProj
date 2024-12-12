@@ -1,11 +1,8 @@
-// import { User} from '../../serverAPI/userFiles/User';
-
-// import * as UserController from "../../serverAPI/userFiles/userController.js";
-
 document.addEventListener("DOMContentLoaded", function () {
   const loginBtn = document.getElementById('login-btn');
   const signupBtn = document.getElementById('signup-btn');
   const searchBtn = document.getElementById('search-btn');
+  const createPostBtn = document.getElementById('create-post-btn'); // New Button Reference
   const contentSection = document.getElementById('content-section');
   const postsContainer = document.getElementById('posts-container');
   const studentID = '/M00946088'; // Set studentID here for reuse across endpoints
@@ -17,7 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const response = await fetch(studentID + '/login');
       const result = await response.json();
-      
+
       if (result.isLoggedIn) {
         isLoggedIn = true;
         loginBtn.innerText = 'Logout';
@@ -30,26 +27,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  checkLoginStatus(); // calls checkLoginStatus on load
+  checkLoginStatus();
 
   // Open modal
-  document.getElementById('signup-btn').addEventListener('click', () => {
+  signupBtn.addEventListener('click', () => {
     document.getElementById('signup-modal').classList.add('active');
   });
 
-  document.getElementById('login-btn').addEventListener('click', async () => {
+  loginBtn.addEventListener('click', async () => {
     if (isLoggedIn) {
-      // Handle logout directly
       try {
         const response = await fetch(studentID + '/login', {
           method: 'DELETE',
         });
-  
+
         if (response.ok) {
           alert('Logout successful');
           isLoggedIn = false;
           loginBtn.innerText = 'Login';
-          console.log('User logged out:', isLoggedIn);
         } else {
           alert('Logout failed');
         }
@@ -58,17 +53,76 @@ document.addEventListener("DOMContentLoaded", function () {
         alert('An error occurred during logout.');
       }
     } else {
-      // Open login modal only when logging in
       if (!isLoggedIn) {
         document.getElementById('login-modal').classList.add('active');
       }
     }
   });
-  
 
-  function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
+  // New Create Post Button Event Listener
+  createPostBtn.addEventListener('click', () => {
+    createPost();
+    fetchPosts();
+  });
+
+  // Mock Create Post Function
+   function createPost() {
+    if (!isLoggedIn) {
+      alert('Please login to create a post');
+      return;
+    }
+    else { // if logged in, create popup for post
+      const modal = document.createElement('div');
+      modal.id = 'create-post-modal';
+      modal.className = 'modal active';
+
+      // Modal content
+      modal.innerHTML = `
+        <div class="modal-content">
+          <button class="modal-close" onclick="closeModal('create-post-modal')">&times;</button>
+          <div class="modal-header">Create Post</div>
+          <form id="create-post-form">
+            <textarea id="post-text" placeholder="Write your post here..."></textarea>
+            <label for="post-image">Upload an image:</label>
+            <input type="file" id="post-image" accept="image/*">
+            <button type="submit">Post</button>
+          </form>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Form submission event listener
+      const form = document.getElementById('create-post-form');
+      form.addEventListener('submit', async (event) =>{
+        event.preventDefault();
+
+        const postText = document.getElementById('post-text').value.trim();
+        const postImage = document.getElementById('post-image').files[0];
+
+        if (!postText && !postImage) { // ensures required data is given to create post
+          alert('You must include text, an image, or both to create a post.');
+          return;
+        }
+        else{ // creates post object and sends to API endpoint
+          const post = JSON.stringify({poster: loggedInUserId, post: { text: postText, image: postImage }});
+          const response = await fetch(`${studentID}/contents`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: post
+          });
+
+          if (response.ok) { // if post was successful
+            closeModal('create-post-modal');
+            showNotification('Post created successfully!', 'success');
+        } else { // if it wasnt
+            showNotification('Failed to create post. Please try again.', 'error');
+        }
+        };
+      });
+    }
   }
+
 
 
   // Handle Sign Up Form Submission
@@ -107,41 +161,41 @@ document.addEventListener("DOMContentLoaded", function () {
     const password = document.getElementById('login-password').value.trim();
 
     try {
-        if (!email || !password) {
-            alert('Both email and password are required.');
-            return;
-        }
+      if (!email || !password) {
+        alert('Both email and password are required.');
+        return;
+      }
 
-        const response = await fetch(studentID + '/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-        });
+      const response = await fetch(studentID + '/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-        if (response.ok) {
-            const data = await response.json(); // Parse the response body
-            if (data.loginStatus) {
-                alert('Login successful');
-                isLoggedIn = true;
-                loggedInUserId = data.userId; // Correctly assign the userId
-                console.log('User logged in:', isLoggedIn, 'userid:', loggedInUserId);
+      if (response.ok) {
+        const data = await response.json(); // Parse the response body
+        if (data.loginStatus) {
+          alert('Login successful');
+          isLoggedIn = true;
+          loggedInUserId = data.userId; // Correctly assign the userId
+          console.log('User logged in:', isLoggedIn, 'userid:', loggedInUserId);
 
-                loginBtn.innerText = 'Logout';
-                closeModal('login-modal');
+          loginBtn.innerText = 'Logout';
+          closeModal('login-modal');
 
-                fetchPosts();
-                console.log(isLoggedIn); // for debugging
-            } else {
-                alert('Login failed');
-            }
+          fetchPosts();
+          console.log(isLoggedIn); // for debugging
         } else {
-            alert('Login failed');
+          alert('Login failed');
         }
+      } else {
+        alert('Login failed');
+      }
     } catch (error) {
-        console.error('Error during login:', error);
-        alert('An error occurred during login.');
+      console.error('Error during login:', error);
+      alert('An error occurred during login.');
     }
-});
+  });
 
 
   // post related functions
@@ -207,11 +261,11 @@ document.addEventListener("DOMContentLoaded", function () {
       if (posts.length > 0) {
         posts.forEach(post => {
           console.log(post.poster, " before resolving");
-          
+
           const poster = resolveUser(post.poster);
           console.log(poster, " after resolving");
 
-          
+
           renderPost(post, poster);
         });
       }
@@ -226,7 +280,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       return userCache[posterId];
       console.log("already cached, Cached user:", userCache[posterId]);
-      
+
     }
 
     try {
@@ -235,8 +289,8 @@ document.addEventListener("DOMContentLoaded", function () {
       console.log("Response: ", result.json());
 
       // console.log("Response as text: ", result.text());
-      
-      
+
+
 
       if (!response.ok) {
         throw new Error("Failed to fetch user");
@@ -244,8 +298,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const user = await response.json();
       userCache[posterId] = user; // cache the resolved user object
-      console.log("Resolved user:" , user);
-      
+      console.log("Resolved user:", user);
+
 
       return user;
 
@@ -297,12 +351,12 @@ document.addEventListener("DOMContentLoaded", function () {
       console.warn("Skipping invalid post:", post);
       return;
     }
-  
+
     const user = await resolveUser(post.poster);
-    
+
     console.log(post.poster + " - poster");
     console.log("Resolved user:", user);
-  
+
     const postDiv = document.createElement('div');
     postDiv.style.border = '1px solid #ddd';
     postDiv.style.borderRadius = '8px';
@@ -311,11 +365,11 @@ document.addEventListener("DOMContentLoaded", function () {
     postDiv.style.display = 'flex';
     postDiv.style.flexDirection = 'column';
     postDiv.style.backgroundColor = '#f9f9f9';
-  
+
     const headerDiv = document.createElement('div');
     headerDiv.style.display = 'flex';
     headerDiv.style.alignItems = 'center';
-  
+
     const profilePic = document.createElement('div');
     profilePic.innerText = user.username ? user.username.charAt(0).toUpperCase() : '?';
     profilePic.style.width = '40px';
@@ -328,25 +382,25 @@ document.addEventListener("DOMContentLoaded", function () {
     profilePic.style.alignItems = 'center';
     profilePic.style.fontSize = '18px';
     profilePic.style.marginRight = '10px';
-  
+
     const userSpan = document.createElement('span');
     userSpan.innerText = user.username || "Unknown";
-  
+
     headerDiv.appendChild(profilePic);
     headerDiv.appendChild(userSpan);
-  
+
     const contentDiv = document.createElement('div');
     contentDiv.innerText = post.text;
     contentDiv.style.marginTop = '10px';
     contentDiv.style.fontSize = '14px';
     contentDiv.style.color = '#333';
-  
+
     // container to hold buttons
     const actionsDiv = document.createElement('div');
     actionsDiv.style.marginTop = '10px';
     actionsDiv.style.display = 'flex';
     actionsDiv.style.gap = '10px';
-  
+
     // like button styling and function
     const likeButton = document.createElement('button');
     likeButton.innerText = post.isLiked ? 'Unlike' : 'Like';
@@ -365,7 +419,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       await toggleLike(post._id, loggedInUserId); // calls like function passing the post id 
     };
-  
+
     // follow button stylig and function
     const followButton = document.createElement('button');
     followButton.innerText = user.isFollowed ? 'Unfollow' : 'Follow';
@@ -379,14 +433,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     followButton.onclick = async () => {
       user.isFollowed = !user.isFollowed; // toggles between two states
-    
+
       followButton.innerText = user.isFollowed ? 'Unfollow' : 'Follow';
       followButton.style.backgroundColor = user.isFollowed ? '#28a745' : '#fff'; // toggles between two colours
       followButton.style.color = user.isFollowed ? '#fff' : '#28a745';
 
       await toggleFollow(post.poster, loggedInUserId); // calls follow function passing the user id
     };
-  
+
     // Block button
     const blockButton = document.createElement('button');
     blockButton.innerText = user.isBlocked ? 'Unblock' : 'Block';
@@ -406,64 +460,40 @@ document.addEventListener("DOMContentLoaded", function () {
 
       await toggleBlock(post.poster, loggedInUserId); // calls block function passing the user id
     };
-  
+
     actionsDiv.appendChild(likeButton);
     actionsDiv.appendChild(followButton);
     actionsDiv.appendChild(blockButton);
-  
+
     postDiv.appendChild(headerDiv);
     postDiv.appendChild(contentDiv);
     postDiv.appendChild(actionsDiv);
-  
+
     postsContainer.appendChild(postDiv);
   }
-  
+
   async function toggleLike(postId, userId) {
     try {
-
-      console.log("Toggling like for postId:", postId, "userId:", userId);
-      
-      const response = await fetch( // checks if liked
-        `${studentID}/posts/isLiked?postId=${postId}&userId=${userId}`
-      );
-      
-      // Parse the server's response
+      const response = await fetch(`${studentID}/posts/like?postId=${postId}&userId=${userId}`);
       const parsedResponse = await response.json();
-      console.log("Parsed response:", parsedResponse);
-      
-  
-      if (parsedResponse.isLiked) {
-        // Logic for "unlike"
-        const unlikeResponse = await fetch(
-          `${studentID}/contents/unlike`,
-          {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ likeId: postId, userId }),
-          }
-        );
-        console.log("Unlike response:", await unlikeResponse.json());
-      } else {
-        // Logic for "like"
-        const likeResponse = await fetch(
-          `${studentID}/posts/like?postId=${postId}&userId=${userId}`,);
-        console.log("Like response:", await likeResponse.json());
-      }
+
+      console.log("Like response:", parsedResponse);
+
     } catch (error) {
       console.error("Error toggling like:", error);
     }
   }
-  
-  
-  
+
+
+
   async function toggleFollow(followeeId, loggedInUserId) { // follow function, somewhere somehow the post.poster id is changing and i have NO idea why or where so whatever idc anymore
-    
+
     try {
       const response = await fetch(
         `${studentID}/isFollowing?followerId=${loggedInUserId}&followeeId=${followeeId}`
       );
       const parsedResponse = await response.json();
-  
+
       if (parsedResponse.isFollowing) { // unfollow logic
         const unfollowResponse = await fetch(
           `${studentID}/follow`,
@@ -489,23 +519,23 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Error toggling follow:", error);
     }
   }
-  
-  
-  
-  
-  async function toggleBlock(userId, loggedInUserId) { // toggles blocking of users
+
+
+
+
+  async function toggleBlock(userId, loggedInUserId) { // toggles blocking of users, different implementation to toggle follow because i wrote that one first and then thought of a better way but dont really have time to redo it
     try {
-  
+
       const response = await fetch( // calls blocking endpoint
         `${studentID}/users/block?userId=${userId}&loggedInUserId=${loggedInUserId}`);
-  
+
       const parsedResponse = await response.json();
       console.log("Block response:", parsedResponse);
     } catch (error) {
       console.error("Error toggling block:", error);
     }
   }
-  
+
 
   function isValidEmail(email) { // email input validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // regex from stack overflow, i dont know regex and am not about to learn it
@@ -516,7 +546,21 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById(modalId).classList.remove('active');
   }
 
-  
+  function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`; // Type can be 'success' or 'error'
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    // Automatically remove notification after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+    fetchPosts();
+}
+
+
 
 
 

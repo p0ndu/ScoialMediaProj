@@ -111,12 +111,12 @@ async function isUsersComment(collection, postID, userID) { // checks if user ha
 
 // -- like related functions --
 
-async function likePost(postCollection, userCollection, postID, userID) { // if user has not already liked the post, adds user to post's likes and post to user's liked posts
-    if (! await checkIfLiked(postCollection, postID, userID)) { // checks if user has not liked the post yet
+async function toggleLikePost(postCollection, userCollection, postID, userID) { // if user has not already liked the post, adds user to post's likes and post to user's liked posts
+    if (! await checkIfLiked(postCollection, postID, userID)) { // if the post has not been liked yet
         try {
-            const postResult = await postCollection.updateOne({ _id: postID }, { $push: { likes: userID } }); // tries to add user to post's likes
-            const userResult = await userCollection.updateOne({ _id: userID }, { $push: { likedPosts: postID } }); // tries to add post to user's liked posts
-
+            const postResult = await postCollection.updateOne({ _id: new ObjectId(postID) }, { $push: { likes: new ObjectId(userID) } }); // tries to add user to post's likes
+            const userResult = await userCollection.updateOne({ _id: new ObjectId(userID) }, { $push: { likedPosts: new ObjectId(postID) } }); // tries to add post to user's liked posts
+            
             return await [postResult, userResult];
         }
         catch (err) {
@@ -124,36 +124,29 @@ async function likePost(postCollection, userCollection, postID, userID) { // if 
             return 0;
         }
     }
-    else {
-        return "User has already liked this post";
-    }
-}
-
-async function unlikePost(postCollection, userCollection, postID, userID) { // if user has liked the post, removes user from post's likes and post from user's liked posts
-    if (await checkIfLiked(postCollection, postID, userID)) { // checks if user has liked the post
+    else if (await checkIfLiked(postCollection, postID, userID)) { // if the post is already liked
         try {
-            const postResult = await postCollection.updateOne({ _id: postID }, { $pull: { likes: userID } }); // tries to remove user from post's likes
-            const userResult = await userCollection.updateOne({ _id: userID }, { $pull: { likedPosts: postID } }); // tries to remove post from user's liked posts
-
-            return await [postResult, userResult];
+            const postResult = await postCollection.updateOne({ _id: new ObjectId(postID) }, { $pull: { likes: new ObjectId(userID) } }); // removes user from post's likes
+            const userResult = await userCollection.updateOne({ _id: new ObjectId(userID) }, { $pull: { likedPosts: new ObjectId(postID) } }); // removes post from user's liked posts
         }
         catch (err) {
             console.log(err);
             return 0;
         }
     }
-    else {
-        return "User has not liked this post";
+    else{
+        console.log("Error in toggleLikePost, neither liked or unliked");
     }
 }
+
 
 async function checkIfLiked(collection, postID, userID) { // checks if a user has liked a post by matching ids
     try {
-        console.log(postID);
-        
+        // console.log(postID);
+
         const result = await collection.findOne({ _id: new ObjectId(postID) }); // tries to find the post in the database
-        console.log(result);
-        
+        // console.log(result);
+
         return result.likes.some(like => like.equals(userID)); // if user is in likes list
     }
     catch (err) {
@@ -242,4 +235,4 @@ async function formatPosts(postCollection, userCollection, posts) {
 
 
 
-export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost, getPosts, checkIfLiked }; 
+export { newPost, deletePost, getPoster, addComment, deleteComment, toggleLikePost, getNumLikes, searchPost, getPosts, checkIfLiked }; 
