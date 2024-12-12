@@ -28,30 +28,32 @@ async function deleteUser(collection, userId) { // remoes user from database by 
 // -- session management functions (maybe move these somewhere else) -- 
 
 function logout(request) {// WIP, logs user out on session storage
-    try{
+    try {
         request.session.email = null;
         return 200;
     }
-    catch(err){
-        return 100;
-    }
-}
-
-async function login(collection, request, email, password) {// WIP, logs user in on local storage
-    try {
-        const userData = await collection.findOne({ email: email }); // tries to find user in database
-
-        if ((userData.email === email) && (userData.password === password) ){
-            request.session.email = userData.email;
-            return 200;
-        }
-    }
     catch (err) {
-        console.log(err);
         return 100;
-
     }
 }
+
+async function login(collection, request, email, password) {
+    try {
+        const userData = await collection.findOne({ email: email });
+
+        if (userData && userData.email === email && userData.password === password) {
+            request.session.email = userData.email;
+            request.session.userId = userData._id;
+            return { status: 200, session: { userId: userData._id } };
+        }
+
+        return { status: 401 }; // Unauthorized if credentials are incorrect
+    } catch (err) {
+        console.log(err);
+        return { status: 500 };
+    }
+}
+
 
 function isLoggedIn(request) { // WIP, checks if user is logged in on local storage
     if (request.session.email != null) {
@@ -111,55 +113,54 @@ async function changeUsername(collection, userId, newUsername) { // changes user
 // -- relationship management functions -- 
 // -- following --
 
-async function followUser(collection, userId, followedId) { // adds followed user to user's followed list, assumes that user exists and isnt already followed
-    if (!await isFollowing(collection, userId, followedId)) { // checks if user is following
+async function followUser(collection, userId, followedId) {
+    const isFollowingResult = await isFollowing(collection, userId, followedId);
+
+    if (!isFollowingResult) {
         try {
-            const result = await collection.updateOne({ _id: userId }, { $push: { following: followedId } }); // tries to add followed user to user's followed list
+            const result = await collection.updateOne(
+                { _id: userId },
+                { $push: { following: new ObjectId(followedId) } } // Force ObjectId
+            );
+
+            console.log('Follow successful:', result);
             return result;
-        }
-        catch (err) {
-            console.log(err);
+        } catch (err) {
+            console.log('Error during follow operation:', err);
             return 100;
         }
     }
-    else {
-        return "User is already following";
-    }
+
+    return 'User is already following';
 }
 
-async function unfollowUser(collection, userId, followedId) { // removes followed user from user's followed list, assumes that user exists and is already followed
-    const isFollowingResult = isFollowing(collection, userId, followedId)
-    if (isFollowingResult) { // checks if user is following
-        try {
-            const result = await collection.updateOne({ _id: userId }, { $pull: { following: followedId } }); // tries to remove followed user from user's followed list
 
+async function unfollowUser(collection, userId, followedId) {
+    const isFollowingResult = await isFollowing(collection, userId, followedId);
+
+    if (isFollowingResult) {
+        try {
+            const result = await collection.updateOne(
+                { _id: userId },
+                { $pull: { following: new ObjectId(followedId) } } // Ensure it's `ObjectId`
+            );
+
+            console.log('Unfollow successful:', result);
             return result;
-        }
-        catch (err) {
-            console.log(err);
+        } catch (err) {
+            console.log('Error during unfollow operation:', err);
             return 200;
         }
     }
-    else {
-        return 100;
-    }
+
+    return 'Not currently following';
 }
+
 
 async function getFollowing(collection, userId) { // gets all users that a user is following
-    try{
-        const user = await collection.findOne({ _id: userId}); // tries to find user in database
-        return user.following;
-    }
-    catch(err){
-        console.log(err);
-        return 100;
-    }
-}
-
-async function isFollowing(collection, userId, followedId) { // checks if a user is following another user
     try {
-        const user = await collection.findOne({ _id: userId }, { following: followedId }); // tries to find user in database
-        return user.following.some(followed => followed === followedId); // returns if followedId is in user
+        const user = await collection.findOne({ _id: userId }); // tries to find user in database
+        return user.following;
     }
     catch (err) {
         console.log(err);
@@ -167,11 +168,47 @@ async function isFollowing(collection, userId, followedId) { // checks if a user
     }
 }
 
-async function searchUser(collection, query){
-    try{
-        const result = await collection.findOne({_id: new ObjectId(query)}); // tries to match user in database to query object id, regex is case insensitive and attempts to match query within username(similar to substring)
+async function isFollowing(collection, followerId, followeeId) {
+    try {
+        console.log('Checking if ', followerId, ' is following', followeeId);
+        const user = await collection.findOne({ _id: new ObjectId(followerId) });
+        // console.log('User:', user);
+        
+
+        let following = false;
+
+        if (!user || !user.following) {
+            console.log('User has no following list.');
+            return false;
+        }
+
+        for (const followee of user.following) {
+            if (followee.equals(followeeId)) {
+                following = true;
+            }
+        }
+
+
+        console.log('Is user following?:', following);
+        console.log(followerId, " \t ", followeeId);
+        
+        return following;
+    } catch (error) {
+        console.error('Error performing isFollowing check:', error);
+        return false;
+    }
+}
+
+
+
+
+
+
+async function searchUser(collection, query) {
+    try {
+        const result = await collection.findOne({ _id: new ObjectId(query) }); // tries to match user in database to query object id, regex is case insensitive and attempts to match query within username(similar to substring)
         return await result;
-    }catch(err){
+    } catch (err) {
         console.log(err);
         return 100;
     } //{ $regex: new RegExp(`${query}`, 'i') } 
@@ -179,49 +216,37 @@ async function searchUser(collection, query){
 
 // -- blocking -- 
 
-async function blockUser(collection, userId, blockedId) { // adds blocked user to user's blocked list, assumes that user exists and isnt already blocked
-    if (!await isUserBlocked(collection, userId, blockedId)) { // checks if user is blocked
-        try {
-            const result = await collection.updateOne({ _id: userId }, { $push: { blockedUsers: blockedId } }); // tries to add blocked user to user's blocked list
-            return result;
-        }
-        catch (err) {
-            console.log(err);
-            return 100;
-        }
-    }
-    else {
-        return "User is already blocked";
-    }
-}
-
-async function unblockUser(collection, userId, blockedId) { // removes blocked user from user's blocked list, assumes that user exists and is already blocked
-    if (await isUserBlocked(collection, userId, blockedId)) { // checks if user is blocked
-        {
-            try {
-                const result = await collection.updateOne({ _id: userId }, { $pull: { blockedUsers: blockedId } }); // tries to remove blocked user from user's blocked list
-                return result;
-            }
-            catch (err) {
-                console.log(err);
-                return 100;
-            }
-        }
-    }
-    else {
-        return "User is not blocked";
-    }
-}
-
-async function isUserBlocked(collection, userId, blockedId) { // checks if a user is blocked by another user
+async function toggleBlockUser(collection, userId, blockedId) {
     try {
-        const user = await collection.findOne({ _id: userId }, { blockedUsers: blockedId }); // tries to find user in database
-        return await user.blockedUsers.some(blocked => blocked.equals(blockedId)); // returns if blockedId is in user
-    }
-    catch (err) {
-        console.log(err);
-        return 100;
+        // Find the user and check if the user is already blocked
+        const user = await collection.findOne({ _id: userId });
+        
+        if (!user) {
+            return "User does not exist";
+        }
+
+        const isBlocked = user.blockedUsers?.some(blocked => blocked.equals(blockedId)) || false;
+
+        if (!isBlocked) { // If not already blocked, add them to the blocked list
+            const result = await collection.updateOne(
+                { _id: userId },
+                { $push: { blockedUsers: blockedId } }
+            );
+            return { action: "blocked", result };
+        } else { // If already blocked, remove them from the blocked list
+            const result = await collection.updateOne(
+                { _id: userId },
+                { $pull: { blockedUsers: blockedId } }
+            );
+            return { action: "unblocked", result };
+        }
+    } catch (err) {
+        console.log("Error toggling block:", err);
+        return { error: "Unable to toggle block" };
     }
 }
 
-export { newUser, deleteUser, logout, login, isLoggedIn, changePassword, changeEmail, changePhoneNumber, changeUsername, followUser, unfollowUser, getFollowing, searchUser,  blockUser, unblockUser }; // exports functions for use in other files
+
+export { newUser, deleteUser, logout, login, isLoggedIn, changePassword, changeEmail, changePhoneNumber, changeUsername, followUser, unfollowUser, getFollowing, searchUser, toggleBlockUser, isFollowing }; // exports functions for use in other files
+
+

@@ -149,8 +149,12 @@ async function unlikePost(postCollection, userCollection, postID, userID) { // i
 
 async function checkIfLiked(collection, postID, userID) { // checks if a user has liked a post by matching ids
     try {
-        const result = await collection.findOne({ _id: postID }); // tries to find the post in the database
-        return await result.likes.some(like => like.equals(userID));
+        console.log(postID);
+        
+        const result = await collection.findOne({ _id: new ObjectId(postID) }); // tries to find the post in the database
+        console.log(result);
+        
+        return result.likes.some(like => like.equals(userID)); // if user is in likes list
     }
     catch (err) {
         console.log(err);
@@ -238,4 +242,4 @@ async function formatPosts(postCollection, userCollection, posts) {
 
 
 
-export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost, getPosts }; 
+export { newPost, deletePost, getPoster, addComment, deleteComment, likePost, unlikePost, getNumLikes, searchPost, getPosts, checkIfLiked }; 
