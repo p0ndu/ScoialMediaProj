@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const userCache = {}; // Cache to reduce repeated API calls
   let isLoggedIn = false;
   let loggedInUserId = null;
+  let blockedUsers = [];
 
   async function checkLoginStatus() {
     try {
@@ -66,7 +67,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Mock Create Post Function
-   function createPost() {
+  function createPost() {
     if (!isLoggedIn) {
       alert('Please login to create a post');
       return;
@@ -94,7 +95,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Form submission event listener
       const form = document.getElementById('create-post-form');
-      form.addEventListener('submit', async (event) =>{
+      form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const postText = document.getElementById('post-text').value.trim();
@@ -104,8 +105,8 @@ document.addEventListener("DOMContentLoaded", function () {
           alert('You must include text, an image, or both to create a post.');
           return;
         }
-        else{ // creates post object and sends to API endpoint
-          const post = JSON.stringify({poster: loggedInUserId, post: { text: postText, image: postImage }});
+        else { // creates post object and sends to API endpoint
+          const post = JSON.stringify({ poster: loggedInUserId, post: { text: postText, image: postImage } });
           const response = await fetch(`${studentID}/contents`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -115,9 +116,9 @@ document.addEventListener("DOMContentLoaded", function () {
           if (response.ok) { // if post was successful
             closeModal('create-post-modal');
             showNotification('Post created successfully!', 'success');
-        } else { // if it wasnt
+          } else { // if it wasnt
             showNotification('Failed to create post. Please try again.', 'error');
-        }
+          }
         };
       });
     }
@@ -178,6 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
           alert('Login successful');
           isLoggedIn = true;
           loggedInUserId = data.userId; // Correctly assign the userId
+          blockedUsers = data.blockedUsers;
           console.log('User logged in:', isLoggedIn, 'userid:', loggedInUserId);
 
           loginBtn.innerText = 'Logout';
@@ -216,10 +218,13 @@ document.addEventListener("DOMContentLoaded", function () {
       // filters out posts by followed users from all posts
       for (const post of allPosts) {
         // Check if the post is not in followedPosts
-        const isAlreadyFollowed = followedPosts.some(followedPost => followedPost._id === post._id);
-        if (!isAlreadyFollowed) {
-          uniqueAllPosts.push(post);
-        }
+        try {
+
+          const isAlreadyFollowed = followedPosts.some(followedPost => followedPost._id === post._id);
+          if (!isAlreadyFollowed) {
+            uniqueAllPosts.push(post);
+          }
+        } catch { }
       }
 
       const combinedPosts = [...followedPosts, ...uniqueAllPosts]; // combines posts to a single array
@@ -354,9 +359,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const user = await resolveUser(post.poster);
 
-    console.log(post.poster + " - poster");
-    console.log("Resolved user:", user);
-
     const postDiv = document.createElement('div');
     postDiv.style.border = '1px solid #ddd';
     postDiv.style.borderRadius = '8px';
@@ -395,13 +397,13 @@ document.addEventListener("DOMContentLoaded", function () {
     contentDiv.style.fontSize = '14px';
     contentDiv.style.color = '#333';
 
-    // container to hold buttons
+    // Container to hold buttons
     const actionsDiv = document.createElement('div');
     actionsDiv.style.marginTop = '10px';
     actionsDiv.style.display = 'flex';
     actionsDiv.style.gap = '10px';
 
-    // like button styling and function
+    // Like Button
     const likeButton = document.createElement('button');
     likeButton.innerText = post.isLiked ? 'Unlike' : 'Like';
     likeButton.style.padding = '5px 10px';
@@ -412,36 +414,36 @@ document.addEventListener("DOMContentLoaded", function () {
     likeButton.style.cursor = 'pointer';
 
     likeButton.onclick = async () => {
-      post.isLiked = !post.isLiked; // toggles between the two states
+      post.isLiked = !post.isLiked;
       likeButton.innerText = post.isLiked ? 'Unlike' : 'Like';
       likeButton.style.backgroundColor = post.isLiked ? '#007bff' : '#fff';
       likeButton.style.color = post.isLiked ? '#fff' : '#007bff';
-
-      await toggleLike(post._id, loggedInUserId); // calls like function passing the post id 
+      await toggleLike(post._id, loggedInUserId);
     };
 
-    // follow button stylig and function
+    actionsDiv.appendChild(likeButton);
+
+    // Follow Button
     const followButton = document.createElement('button');
     followButton.innerText = user.isFollowed ? 'Unfollow' : 'Follow';
-
     followButton.style.padding = '5px 10px';
     followButton.style.border = '1px solid #28a745';
     followButton.style.borderRadius = '4px';
-    followButton.style.backgroundColor = user.isFollowed ? '#28a745' : '#fff'; // toggles between two colours
+    followButton.style.backgroundColor = user.isFollowed ? '#28a745' : '#fff';
     followButton.style.color = user.isFollowed ? '#fff' : '#28a745';
     followButton.style.cursor = 'pointer';
 
     followButton.onclick = async () => {
-      user.isFollowed = !user.isFollowed; // toggles between two states
-
+      user.isFollowed = !user.isFollowed;
       followButton.innerText = user.isFollowed ? 'Unfollow' : 'Follow';
-      followButton.style.backgroundColor = user.isFollowed ? '#28a745' : '#fff'; // toggles between two colours
+      followButton.style.backgroundColor = user.isFollowed ? '#28a745' : '#fff';
       followButton.style.color = user.isFollowed ? '#fff' : '#28a745';
-
-      await toggleFollow(post.poster, loggedInUserId); // calls follow function passing the user id
+      await toggleFollow(user._id, loggedInUserId);
     };
 
-    // Block button
+    actionsDiv.appendChild(followButton);
+
+    // Block Button
     const blockButton = document.createElement('button');
     blockButton.innerText = user.isBlocked ? 'Unblock' : 'Block';
     blockButton.style.padding = '5px 10px';
@@ -452,18 +454,36 @@ document.addEventListener("DOMContentLoaded", function () {
     blockButton.style.cursor = 'pointer';
 
     blockButton.onclick = async () => {
-      user.isBlocked = !user.isBlocked; // toggles between two states
-
+      user.isBlocked = !user.isBlocked;
       blockButton.innerText = user.isBlocked ? 'Unblock' : 'Block';
-      blockButton.style.backgroundColor = user.isBlocked ? '#dc3545' : '#fff'; // toggles between two colours
+      blockButton.style.backgroundColor = user.isBlocked ? '#dc3545' : '#fff';
       blockButton.style.color = user.isBlocked ? '#fff' : '#dc3545';
-
-      await toggleBlock(post.poster, loggedInUserId); // calls block function passing the user id
+      await toggleBlock(user._id, loggedInUserId);
     };
 
-    actionsDiv.appendChild(likeButton);
-    actionsDiv.appendChild(followButton);
     actionsDiv.appendChild(blockButton);
+
+    // Add Delete Button if the post belongs to the logged-in user
+    if (post.poster === loggedInUserId) {
+      const deleteButton = document.createElement('button');
+      deleteButton.innerText = 'Delete Post';
+      deleteButton.style.padding = '5px 10px';
+      deleteButton.style.border = '1px solid #dc3545';
+      deleteButton.style.borderRadius = '4px';
+      deleteButton.style.backgroundColor = '#fff';
+      deleteButton.style.color = '#dc3545';
+      deleteButton.style.cursor = 'pointer';
+
+      deleteButton.onclick = async () => {
+        if (confirm("Are you sure you want to delete this post?")) {
+          await deletePost(post._id);
+          // postDiv.remove();
+          showNotification('Post deleted successfully!', 'success');
+        }
+      };
+
+      actionsDiv.appendChild(deleteButton);
+    }
 
     postDiv.appendChild(headerDiv);
     postDiv.appendChild(contentDiv);
@@ -472,17 +492,34 @@ document.addEventListener("DOMContentLoaded", function () {
     postsContainer.appendChild(postDiv);
   }
 
-  async function toggleLike(postId, userId) {
-    try {
-      const response = await fetch(`${studentID}/posts/like?postId=${postId}&userId=${userId}`);
-      const parsedResponse = await response.json();
+  // Mock Delete Post Function
+  async function deletePost(postId) {
+    console.log("Deleting post:", postId);
 
-      console.log("Like response:", parsedResponse);
+    const requestBody = {
+      postId: postId,
+      userId: loggedInUserId,
+      blockedUsers: blockedUsers
+    };
 
-    } catch (error) {
-      console.error("Error toggling like:", error);
+    console.log(requestBody);
+
+    const response = await fetch(`${studentID}/contents`, { // sends delete request to api endpoint
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (response.ok) {
+      console.log("Post deleted successfully");
     }
+    else {
+      console.log("Post deletion failed");
+    }
+
+    fetchPosts();
   }
+
 
 
 
@@ -520,9 +557,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-
-
-
   async function toggleBlock(userId, loggedInUserId) { // toggles blocking of users, different implementation to toggle follow because i wrote that one first and then thought of a better way but dont really have time to redo it
     try {
 
@@ -535,7 +569,6 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Error toggling block:", error);
     }
   }
-
 
   function isValidEmail(email) { // email input validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // regex from stack overflow, i dont know regex and am not about to learn it
@@ -555,10 +588,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Automatically remove notification after 3 seconds
     setTimeout(() => {
-        notification.remove();
+      notification.remove();
     }, 3000);
     fetchPosts();
-}
+  }
 
 
 

@@ -63,7 +63,7 @@ async function startService(userCollection, postCollection) {
         });
 
 
-        expressServer.post(studentID + '/login', async (req, res) => {
+        expressServer.post(studentID + '/login', async (req, res) => { // get request to log the user in
             const result = await userController.login(userCollection, req, req.body.email, req.body.password);
 
             if (result.status === 200) {
@@ -101,11 +101,11 @@ async function startService(userCollection, postCollection) {
         expressServer.post(studentID + '/contents', async (req, res) => { // post request to create new post, req needs to be JSON object with required post data
             const postData = req.body; // extracting data from request
             console.log(postData);
-            const {poster, post} = postData;
+            const { poster, post } = postData;
 
             const posterId = new ObjectId(poster); // building post
             const postObj = new Post(posterId, post.text);
-            
+
             const result = await postController.newPost(postCollection, postObj); // pushes post to database
 
             if (result === 200) {
@@ -114,6 +114,25 @@ async function startService(userCollection, postCollection) {
             else {
                 res.send({
                     postStatus: false,
+                    ErrorMessage: result
+                });
+            }
+        })
+
+        expressServer.delete(studentID + '/contents', async (req, res) => { // delete request to delete post, req needs to be JSON object with required post data
+
+            const postData = req.body;
+            const {postId, userId} = postData;
+            console.log(postData);
+
+            const result = await postController.deletePost(postCollection, postId, userId); // deletes post from database
+
+            if (result === 200){
+                res.send({deleteStatus: true});
+            }
+            else {
+                res.send({
+                    deleteStatus: false,
                     ErrorMessage: result
                 });
             }
@@ -248,15 +267,18 @@ async function startService(userCollection, postCollection) {
 
         expressServer.get(studentID + '/users/block', async (req, res) => { // block a user
             try {
-                const { userId, loggedInUserId } = req.query;
+                const { userId, loggedInUserId, blockedList } = req.query;
 
                 if (!userId || !loggedInUserId) {
                     return res.status(400).json({ error: "Both blockerId and blockeeId are required" });
                 }
 
-                userController.toggleBlockUser(userCollection, userId, loggedInUserId);
+                const result = userController.toggleBlockUser(userCollection, userId, loggedInUserId, blockedList );
 
-                res.status(200).json({ success: true });
+                console.log(await result);
+                
+
+                res.status(200).json({ success: true, blockedList:  result.blockedList});
 
             } catch (error) {
                 console.error('Error blocking user:', error);
@@ -343,7 +365,7 @@ async function startService(userCollection, postCollection) {
                 }
 
                 const isLiked = await postController.checkIfLiked(postCollection, postId, userId);
-                
+
                 res.status(200).json({ isLiked });
             }
             catch (error) {

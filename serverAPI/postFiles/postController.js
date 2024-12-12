@@ -20,9 +20,12 @@ async function newPost(collection, post) // creates a new post in the database
 
 async function deletePost(collection, postID, userID) // deletes a post from the database by matching id
 {
+    console.log("Deleting post", postID, "by user", userID);
+    
     if (await isUsersPost(collection, postID, userID)) { // checks if user is the poster of the post
+        console.log("User is the poster of the post");
         try {
-            const result = await collection.deleteOne({ _id: postID }); // tries to delete post from database
+            const result = await collection.deleteOne({ _id: new ObjectId(postID) }); // tries to delete post from database
             console.log(result);
             return 200;
         }
@@ -38,8 +41,9 @@ async function deletePost(collection, postID, userID) // deletes a post from the
 
 async function isUsersPost(collection, postID, userID) { // checks if user is the poster of a post by matching ids
     try {
-        const result = await collection.findOne({ _id: postID }); // tries to find the post in the database
-        return await result.poster.equals(userID);
+        const result = await collection.findOne({ _id: new ObjectId(postID) }); // tries to find the post in the database
+        
+        return await result.poster.equals(new ObjectId(userID));
     }
     catch (err) {
         console.log(err);

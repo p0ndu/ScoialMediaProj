@@ -216,11 +216,15 @@ async function searchUser(collection, query) {
 
 // -- blocking -- 
 
-async function toggleBlockUser(collection, userId, loggedInUserId) {
+async function toggleBlockUser(collection, userId, loggedInUserId, blockedList) {
     try {
         // Find the user and check if the user is already blocked
         const user = await collection.findOne({ _id: new ObjectId(loggedInUserId) });
-        console.log("within toggleBlockUser", userId, loggedInUserId, await user);
+        // console.log("within toggleBlockUser", userId, loggedInUserId, await user);
+
+        let blockList = blockedList;
+        console.log(blockList);
+        
         
         
         if (!user) {
@@ -242,7 +246,10 @@ async function toggleBlockUser(collection, userId, loggedInUserId) {
                 { _id: new ObjectId(loggedInUserId) },
                 { $push: { blockedUsers: userId } }
             );
-            return { action: "blocked", result };
+            blockList.push(userId);
+            console.log(blockList);
+            
+            return { action: "blocked", result, blockList };
 
         } else { // If already blocked, remove them from the blocked list
             console.log("triggered blocked \n\n\n");
