@@ -119,7 +119,7 @@ async function startService(userCollection, postCollection) {
                 let user = req.session.email;
                 user = await userCollection.findOne({ email: user });
                 const userId = user._id;
-                const followeeId = new ObjectId(req.body.followeeId);
+                const followeeId = new ObjectId(req.body.followId);
 
                 const result = await userController.followUser(userCollection, userId, followeeId);
 
@@ -139,7 +139,7 @@ async function startService(userCollection, postCollection) {
                 let user = req.session.email;
                 user = await userCollection.findOne({ email: user });
                 const userId = user._id;
-                const followeeId = new ObjectId(req.body.followeeId);
+                const followeeId = new ObjectId(req.body.followId);
 
                 const result = await userController.unfollowUser(userCollection, userId, followeeId);
 
@@ -243,13 +243,15 @@ async function startService(userCollection, postCollection) {
 
         expressServer.get(studentID + '/users/block', async (req, res) => { // block a user
             try {
-                const { blockerId, blockeeId } = req.query;
+                const { userId, loggedInUserId } = req.query;
+                console.log("blockedId: ", userId, "loggedInUserId: ", loggedInUserId);
+                
 
-                if (!blockerId || !blockeeId) {
+                if (!userId || !loggedInUserId) {
                     return res.status(400).json({ error: "Both blockerId and blockeeId are required" });
                 }
 
-                userController.toggleBlockUser(userCollection, blockerId, blockeeId);
+                userController.toggleBlockUser(userCollection, userId, loggedInUserId);
 
                 res.status(200).json({ success: true });
 

@@ -384,7 +384,7 @@ document.addEventListener("DOMContentLoaded", function () {
       followButton.style.backgroundColor = user.isFollowed ? '#28a745' : '#fff'; // toggles between two colours
       followButton.style.color = user.isFollowed ? '#fff' : '#28a745';
 
-      await toggleFollow(post.poster); // calls follow function passing the user id
+      await toggleFollow(post.poster, loggedInUserId); // calls follow function passing the user id
     };
   
     // Block button
@@ -404,7 +404,7 @@ document.addEventListener("DOMContentLoaded", function () {
       blockButton.style.backgroundColor = user.isBlocked ? '#dc3545' : '#fff'; // toggles between two colours
       blockButton.style.color = user.isBlocked ? '#fff' : '#dc3545';
 
-      await toggleBlock(post.poster); // calls block function passing the user id
+      await toggleBlock(post.poster, loggedInUserId); // calls block function passing the user id
     };
   
     actionsDiv.appendChild(likeButton);
@@ -466,7 +466,7 @@ document.addEventListener("DOMContentLoaded", function () {
   
       if (parsedResponse.isFollowing) { // unfollow logic
         const unfollowResponse = await fetch(
-          `${studentID}/unfollow`,
+          `${studentID}/follow`,
           {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
@@ -493,11 +493,10 @@ document.addEventListener("DOMContentLoaded", function () {
   
   
   
-  async function toggleBlock(userId, loggedInUserId) {
+  async function toggleBlock(userId, loggedInUserId) { // toggles blocking of users
     try {
-      console.log("Toggling block for userId:", userId ,' from user:', loggedInUserId);
   
-      const response = await fetch(
+      const response = await fetch( // calls blocking endpoint
         `${studentID}/users/block?userId=${userId}&loggedInUserId=${loggedInUserId}`);
   
       const parsedResponse = await response.json();

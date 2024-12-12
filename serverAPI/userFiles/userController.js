@@ -211,32 +211,45 @@ async function searchUser(collection, query) {
     } catch (err) {
         console.log(err);
         return 100;
-    } //{ $regex: new RegExp(`${query}`, 'i') } 
+    }
 }
 
 // -- blocking -- 
 
-async function toggleBlockUser(collection, userId, blockedId) {
+async function toggleBlockUser(collection, userId, loggedInUserId) {
     try {
         // Find the user and check if the user is already blocked
-        const user = await collection.findOne({ _id: userId });
+        const user = await collection.findOne({ _id: new ObjectId(loggedInUserId) });
+        console.log("within toggleBlockUser", userId, loggedInUserId, await user);
+        
         
         if (!user) {
             return "User does not exist";
         }
 
-        const isBlocked = user.blockedUsers?.some(blocked => blocked.equals(blockedId)) || false;
+        let isBlocked  = false;
+        user.blockedUsers.forEach(blockedUser => {
+            if (blockedUser == userId) {
+                isBlocked = true;
+            }
+        });
+
 
         if (!isBlocked) { // If not already blocked, add them to the blocked list
+            console.log("triggered not blocked \n\n\n");
+            
             const result = await collection.updateOne(
-                { _id: userId },
-                { $push: { blockedUsers: blockedId } }
+                { _id: new ObjectId(loggedInUserId) },
+                { $push: { blockedUsers: userId } }
             );
             return { action: "blocked", result };
+
         } else { // If already blocked, remove them from the blocked list
+            console.log("triggered blocked \n\n\n");
+            
             const result = await collection.updateOne(
-                { _id: userId },
-                { $pull: { blockedUsers: blockedId } }
+                { _id: new ObjectId(loggedInUserId) },
+                { $pull: { blockedUsers: userId } }
             );
             return { action: "unblocked", result };
         }
